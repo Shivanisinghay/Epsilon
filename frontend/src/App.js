@@ -1,6 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
-import { Grid, GridItem, useBreakpointValue, Box } from '@chakra-ui/react';
+import { Grid, GridItem, useBreakpointValue, Box, Flex } from '@chakra-ui/react';
 import Sidebar from './components/Sidebar';
 import Home from './pages/Home';
 import Login from './pages/Login';
@@ -49,13 +49,22 @@ function App() {
             <MainContent />
           </GridItem>
         </Grid>
-      ) : (
+      ) : user ? ( // Logged in on mobile
         <>
-            {user && isMobile && <Sidebar />}
-            <Box pt={isMobile && user ? "60px" : "0"} p={4}>
+            <Sidebar />
+            <Box pt={"60px"} p={4}>
                 <MainContent />
             </Box>
         </>
+      ) : ( // Not logged in
+        <Flex
+          minH="100vh"
+          align="center"
+          justify="center"
+          p={4}
+        >
+          <MainContent />
+        </Flex>
       )}
     </Router>
   );

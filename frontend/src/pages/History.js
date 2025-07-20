@@ -1,29 +1,227 @@
 import React, { useEffect, useState, useRef } from 'react';
 import {
-  Box, Heading, Text, VStack, Spinner, Card, CardBody, CardHeader, Divider, Button, Image, HStack,
+  Box, Heading, Text, Spinner, Card, CardBody, CardHeader, Button, Image, HStack,
   Modal, ModalOverlay, ModalContent, ModalHeader, ModalFooter, ModalCloseButton, ModalBody, useDisclosure,
-  AlertDialog, AlertDialogBody, AlertDialogFooter, AlertDialogHeader, AlertDialogContent, AlertDialogOverlay, Icon
+  AlertDialog, AlertDialogBody, AlertDialogFooter, AlertDialogHeader, AlertDialogContent, AlertDialogOverlay,
+  SimpleGrid, Tag, IconButton, VStack, Spacer, Input, FormControl, FormLabel
 } from '@chakra-ui/react';
 import { getContentHistory, deleteContent } from '../services/content';
 import SocialShareButtons from '../components/SocialShareButtons';
 import toast from 'react-hot-toast';
-import { FaTrash } from 'react-icons/fa';
+import { FaTrash, FaCopy, FaDownload, FaEnvelope } from 'react-icons/fa';
+import { glassmorphismStyle } from '../theme';
 
+// Reusable modal for viewing content with actions
+const ViewModal = ({ isOpen, onClose, selectedItem }) => {
+  const [recipients, setRecipients] = useState('');
+
+  // Effect to clear recipients when modal is closed or a new item is selected
+  useEffect(() => {
+    if (!isOpen) {
+      setRecipients('');
+    }
+  }, [isOpen]);
+
+  if (!selectedItem) return null;
+
+  const contentUrl = `${process.env.REACT_APP_BACKEND_URL}${selectedItem.generatedContent}`;
+  const contentType = selectedItem?.type || '';
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(selectedItem.generatedContent);
+    toast.success("Copied to clipboard!");
+  };
+
+  const handleDownload = () => {
+    const link = document.createElement('a');
+    link.href = contentUrl;
+    const fileExtension = contentType === 'audio' ? 'mp3' : 'png';
+    link.download = `epsilon-${contentType}-${selectedItem._id}.${fileExtension}`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+  
+  const handleShareEmail = () => {
+    if (contentType !== 'email') return;
+
+    if (!recipients.trim()) {
+        toast.error('Please enter at least one recipient email address.');
+        return;
+    }
+
+    const emailContent = selectedItem.generatedContent;
+    let subject = '';
+    let body = '';
+
+    const subjectMatch = emailContent.match(/Subject: (.*)/);
+    if (subjectMatch && subjectMatch[1]) {
+      subject = subjectMatch[1];
+      body = emailContent.substring(subjectMatch[0].length).trim();
+    } else {
+      const lines = emailContent.split('\n');
+      subject = lines[0] || 'Email from Epsilon';
+      body = lines.slice(1).join('\n').trim();
+    }
+
+    const mailtoLink = `mailto:${recipients}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.location.href = mailtoLink;
+    
+    // FIX: Close the modal immediately after launching the email client
+    onClose(); 
+  };
+
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} size="3xl" isCentered scrollBehavior="inside">
+      <ModalOverlay />
+      <ModalContent bg="gray.800" color="white" {...glassmorphismStyle} bg="gray.900">
+        <ModalHeader textTransform="capitalize">
+          {contentType} Content
+        </ModalHeader>
+        <ModalCloseButton />
+        <ModalBody>
+          <VStack align="start" spacing={5}>
+            <Box>
+              <Heading size="sm" color="cyan.400">Prompt:</Heading>
+              <Text mt={1}>{selectedItem.prompt}</Text>
+            </Box>
+            <Box w="100%">
+              <Heading size="sm" color="cyan.400">Generated Content:</Heading>
+              {contentType === 'image' ? (
+                <Image src={contentUrl} alt={selectedItem.prompt} mt={2} maxW="100%" borderRadius="md" />
+              ) : contentType === 'audio' ? (
+                 <audio controls src={contentUrl} style={{ filter: 'invert(1)', width: '100%', marginTop: '8px' }}>
+                    Your browser does not support the audio element.
+                </audio>
+              ) : (
+                <Text mt={2} whiteSpace="pre-wrap" p={3} bg="blackAlpha.300" borderRadius="md">{selectedItem.generatedContent}</Text>
+              )}
+            </Box>
+
+            {contentType === 'email' && (
+                 <FormControl>
+                    <FormLabel htmlFor="recipients" color="cyan.400">Recipients (comma-separated):</FormLabel>
+                    <Input
+                        id="recipients"
+                        type="email"
+                        placeholder="user1@example.com, user2@example.com"
+                        value={recipients}
+                        onChange={(e) => setRecipients(e.target.value)}
+                        variant="filled"
+                        bg="gray.700"
+                        _hover={{ bg: 'gray.600' }}
+                        _focus={{ bg: 'gray.600', borderColor: 'cyan.400' }}
+                    />
+                 </FormControl>
+            )}
+
+          </VStack>
+        </ModalBody>
+        <ModalFooter>
+            {contentType === 'image' && <Button leftIcon={<FaDownload />} onClick={handleDownload} mr={3}>Download</Button>}
+            {contentType === 'audio' && <Button leftIcon={<FaDownload />} onClick={handleDownload} mr={3}>Download</Button>}
+            
+            {contentType === 'email' ? (
+                <Button leftIcon={<FaEnvelope />} onClick={handleShareEmail} colorScheme="cyan">Send Email</Button>
+            ) : (
+                 <SocialShareButtons
+                    content={selectedItem.prompt}
+                    url={contentType === 'audio' ? contentUrl : undefined}
+                    imageUrl={contentType === 'image' ? contentUrl : undefined}
+                />
+            )}
+
+            {contentType.match(/notification|transcript|email/) && <Button leftIcon={<FaCopy />} onClick={handleCopy} ml={3}>Copy Text</Button>}
+
+            <Spacer />
+            <Button onClick={onClose}>Close</Button>
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
+  );
+};
+
+// Larger, less congested History Item Card
+const HistoryItem = ({ item, onView, onDelete }) => {
+  return (
+    <Card
+      direction="column"
+      variant="outline"
+      minH="200px"
+      onClick={() => onView(item)}
+      cursor="pointer"
+      _hover={{ bg: 'whiteAlpha.200', transform: 'translateY(-2px)' }}
+      transition="all 0.2s ease-in-out"
+      display="flex"
+      flexDirection="column"
+    >
+      <CardHeader>
+        <HStack justifyContent="space-between" alignItems="start">
+          <Tag size="md" variant="solid" colorScheme='cyan' textTransform="capitalize">{item.type}</Tag>
+          <IconButton
+            aria-label="Delete content"
+            icon={<FaTrash />}
+            size="sm"
+            variant="ghost"
+            colorScheme="red"
+            onClick={(e) => {
+                e.stopPropagation();
+                onDelete(item);
+            }}
+          />
+        </HStack>
+      </CardHeader>
+      <CardBody pt={0} display="flex" flexDirection="column" flex="1">
+        <VStack align="start" spacing={3} h="100%" flex="1" justifyContent="space-between">
+           <Text fontWeight="bold" noOfLines={5} title={item.prompt} flex="1">
+             {item.prompt}
+          </Text>
+          <Text fontSize="xs" color="gray.500" alignSelf="flex-end">
+            {new Date(item.createdAt).toLocaleTimeString()}
+          </Text>
+        </VStack>
+      </CardBody>
+    </Card>
+  );
+};
+
+
+// Main History Component
 const History = () => {
-  const [history, setHistory] = useState([]);
+  const [history, setHistory] = useState({});
   const [loading, setLoading] = useState(true);
   const [selectedItem, setSelectedItem] = useState(null);
   const [itemToDelete, setItemToDelete] = useState(null);
-  
+
   const { isOpen: isViewOpen, onOpen: onViewOpen, onClose: onViewClose } = useDisclosure();
   const { isOpen: isDeleteOpen, onOpen: onDeleteOpen, onClose: onDeleteClose } = useDisclosure();
   const cancelRef = useRef();
+  
+  const formatDateLabel = (dateString) => {
+      const date = new Date(dateString);
+      const today = new Date();
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+
+      if (date.toDateString() === today.toDateString()) return 'Today';
+      if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
+      return date.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  };
 
   const fetchHistory = async () => {
     setLoading(true);
     try {
       const data = await getContentHistory();
-      setHistory(data);
+      const groupedHistory = data.reduce((acc, item) => {
+          const date = new Date(item.createdAt).toDateString();
+          if (!acc[date]) {
+              acc[date] = [];
+          }
+          acc[date].push(item);
+          return acc;
+      }, {});
+      setHistory(groupedHistory);
     } catch (error) {
       toast.error("Failed to fetch content history.");
     } finally {
@@ -40,11 +238,16 @@ const History = () => {
     onDeleteOpen();
   };
 
+  const openViewModal = (item) => {
+    setSelectedItem(item);
+    onViewOpen();
+  }
+
   const confirmDelete = async () => {
     if (!itemToDelete) return;
     try {
       await deleteContent(itemToDelete._id);
-      setHistory(prevHistory => prevHistory.filter(item => item._id !== itemToDelete._id));
+      fetchHistory();
       toast.success("Content deleted successfully!");
     } catch (error) {
         toast.error(error.response?.data?.msg || "Failed to delete content.");
@@ -53,63 +256,8 @@ const History = () => {
         setItemToDelete(null);
     }
   };
-  
-  // ... (handleCopy, handleViewImage, and renderContent functions remain the same)
-  const handleCopy = (content) => {
-    navigator.clipboard.writeText(content);
-    toast.success("Copied to clipboard!");
-  };
 
-  const handleViewImage = (item) => {
-    setSelectedItem(item);
-    onViewOpen();
-  };
-  
-  const handleDownload = (url, filename) => {
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const renderContent = (item) => {
-    const contentUrl = `${process.env.REACT_APP_BACKEND_URL}${item.generatedContent}`;
-    switch (item.type) {
-      case 'image':
-        return (
-          <Box>
-            <Image src={contentUrl} alt={item.prompt} borderRadius="md" maxW="200px" cursor="pointer" onClick={() => handleViewImage(item)} />
-            <HStack mt={4}>
-                <Button size="sm" onClick={() => handleViewImage(item)} variant="outline" colorScheme="cyan">View</Button>
-                <SocialShareButtons content={item.prompt} imageUrl={contentUrl} />
-            </HStack>
-          </Box>
-        );
-      case 'audio':
-        return (
-            <Box>
-                <audio controls src={contentUrl} style={{ filter: 'invert(1)' }}> Your browser does not support the audio element. </audio>
-                <HStack mt={4}>
-                    <Button size="sm" onClick={() => handleDownload(contentUrl, `epsilon-audio.mp3`)} variant="outline" colorScheme="cyan">Download</Button>
-                    <SocialShareButtons content={`Listen to this audio ad I generated: ${item.prompt}`} url={contentUrl} />
-                </HStack>
-            </Box>
-        );
-      default:
-        return (
-          <Box>
-            <Text whiteSpace="pre-wrap">{item.generatedContent}</Text>
-            <HStack mt={4}>
-                <Button size="sm" onClick={() => handleCopy(item.generatedContent)} variant="outline" colorScheme="cyan">Copy Text</Button>
-                <SocialShareButtons content={item.generatedContent} />
-            </HStack>
-          </Box>
-        );
-    }
-  };
-
+  const sortedDates = Object.keys(history).sort((a, b) => new Date(b) - new Date(a));
 
   if (loading) {
     return (
@@ -122,54 +270,42 @@ const History = () => {
   return (
     <>
       <Box w="100%">
-        <Heading as="h3" size="lg" mb={4}> Content Generation History </Heading>
-        <VStack spacing={4} align="stretch" maxH="60vh" overflowY="auto" pr={4}>
-          {history.length > 0 ? (
-            history.map((item) => (
-              <Card key={item._id}>
-                <CardHeader>
-                  <HStack justifyContent="space-between">
-                    <Box>
-                        <Heading size="md" textTransform="capitalize" color="white">{item.type}</Heading>
-                        <Text fontSize="sm" color="gray.400">{new Date(item.createdAt).toLocaleString()}</Text>
-                    </Box>
-                    <Button size="sm" variant="ghost" colorScheme="red" onClick={() => openDeleteDialog(item)}>
-                        <Icon as={FaTrash} />
-                    </Button>
-                  </HStack>
-                </CardHeader>
-                <CardBody>
-                  <Text fontWeight="bold" color="cyan.400">Prompt:</Text>
-                  <Text mb={4} noOfLines={2} color="gray.300">{item.prompt}</Text>
-                  <Divider borderColor="whiteAlpha.300" />
-                  <Text fontWeight="bold" mt={4} color="cyan.400">Generated Content:</Text>
-                  {renderContent(item)}
-                </CardBody>
-              </Card>
-            ))
-          ) : (
-            <Text>No history found. Start generating some content!</Text>
-          )}
-        </VStack>
+        <Heading as="h1" size="xl" mb={8} bgGradient="linear(to-r, cyan.400, blue.500)" bgClip="text">
+          Content Generation History
+        </Heading>
+        {sortedDates.length > 0 ? (
+          sortedDates.map(date => (
+            <Box key={date} mb={8}>
+                <Heading as="h2" size="lg" mb={4} borderBottom="2px" borderColor="cyan.400" pb={2}>
+                    {formatDateLabel(date)}
+                </Heading>
+                <SimpleGrid columns={{ base: 1, md: 2, xl: 3 }} spacing={6}>
+                    {history[date].map((item) => (
+                      <HistoryItem
+                        key={item._id}
+                        item={item}
+                        onView={openViewModal}
+                        onDelete={openDeleteDialog}
+                      />
+                    ))}
+                </SimpleGrid>
+            </Box>
+          ))
+        ) : (
+          <Box textAlign="center" p={10} {...glassmorphismStyle}>
+            <Heading size="md">No History Found</Heading>
+            <Text mt={2}>Start generating some content to see it here!</Text>
+          </Box>
+        )}
       </Box>
 
-      {/* Modal for Viewing Image */}
-      <Modal isOpen={isViewOpen} onClose={onViewClose} size="2xl" isCentered>
-        <ModalOverlay />
-        <ModalContent bg="gray.800" color="white">
-          <ModalHeader noOfLines={1}>{selectedItem?.prompt}</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <Image src={`${process.env.REACT_APP_BACKEND_URL}${selectedItem?.generatedContent}`} alt={selectedItem?.prompt} maxW="100%" borderRadius="md" />
-          </ModalBody>
-           <ModalFooter>
-             <Button onClick={onViewClose}> Close </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+      <ViewModal
+        isOpen={isViewOpen}
+        onClose={onViewClose}
+        selectedItem={selectedItem}
+      />
 
-      {/* AlertDialog for Deletion Confirmation */}
-       <AlertDialog
+      <AlertDialog
         isOpen={isDeleteOpen}
         leastDestructiveRef={cancelRef}
         onClose={onDeleteClose}

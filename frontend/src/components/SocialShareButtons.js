@@ -1,90 +1,122 @@
+import React from 'react';
 import {
-  HStack, Button, Modal, ModalOverlay, ModalContent, ModalHeader,
-  ModalCloseButton, ModalBody, useDisclosure, Text, VStack, Link
-} from '@chakra-ui/react';
-import {
-  FacebookShareButton, TwitterShareButton, LinkedinShareButton, WhatsappShareButton,
-  FacebookIcon, TwitterIcon, LinkedinIcon, WhatsappIcon,
+  FacebookShareButton,
+  TwitterShareButton,
+  LinkedinShareButton,
+  WhatsappShareButton,
 } from 'react-share';
-import { FaInstagram } from 'react-icons/fa';
+import { HStack, IconButton, Tooltip } from '@chakra-ui/react';
+import { FaFacebook, FaTwitter, FaLinkedin, FaWhatsapp, FaShareAlt } from 'react-icons/fa';
 import toast from 'react-hot-toast';
 
 const SocialShareButtons = ({ content, url, imageUrl }) => {
-  const shareUrl = url || window.location.href;
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  // Use the image URL if available, otherwise fall back to the provided URL or the page URL.
+  const shareUrl = imageUrl || url || window.location.href;
+  const title = content;
 
-  const handleDownload = () => {
-    if (!imageUrl) return;
-    const link = document.createElement('a');
-    link.href = imageUrl;
-    link.download = 'epsilon-generated-image.png';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    toast.success("Image downloaded! You can now share it on Instagram.");
+  // This function uses the modern Web Share API to share the actual file.
+  const handleNativeShare = async () => {
+    if (!imageUrl) {
+      toast.error("No image file available to share.");
+      return;
+    }
+
+    try {
+      // 1. Fetch the image data from your backend
+      const response = await fetch(imageUrl);
+      if (!response.ok) {
+        throw new Error('Image could not be fetched.');
+      }
+      const blob = await response.blob();
+      
+      // 2. Create a file object that the share API can use
+      const file = new File([blob], 'epsilon-image.png', { type: blob.type });
+
+      // 3. Check if the browser can share this file type
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        // 4. Open the native share dialog
+        await navigator.share({
+          files: [file],
+          title: title,
+          text: `Image generated with Epsilon: ${title}`,
+        });
+      } else {
+        toast.error("Your browser doesn't support sharing files directly.");
+      }
+    } catch (err) {
+      console.error("Share failed:", err);
+      toast.error("Could not share the image.");
+    }
   };
+  
+  // Check if the browser supports the Web Share API for files.
+  const isWebShareSupported = typeof navigator.share === 'function' && typeof navigator.canShare === 'function';
 
   return (
-    <>
-      <HStack mt={4} spacing={4}>
-        <TwitterShareButton url={shareUrl} title={content}>
-          <TwitterIcon size={32} round />
-        </TwitterShareButton>
+    <HStack spacing={2}>
+      {/* 1. Primary "Share" Button for modern devices */}
+      {isWebShareSupported && imageUrl && (
+        <Tooltip label="Share Image File" placement="top" hasArrow>
+          <IconButton
+            icon={<FaShareAlt />}
+            isRound
+            size="sm"
+            colorScheme="messenger"
+            aria-label="Share Image File"
+            onClick={handleNativeShare}
+          />
+        </Tooltip>
+      )}
 
-        <FacebookShareButton url={shareUrl} quote={content}>
-          <FacebookIcon size={32} round />
+      {/* 2. Fallback buttons for other platforms/browsers */}
+      <Tooltip label="Share on Facebook" placement="top" hasArrow>
+        <FacebookShareButton url={shareUrl} quote={title}>
+          <IconButton
+            icon={<FaFacebook />}
+            isRound
+            size="sm"
+            colorScheme="facebook"
+            aria-label="Share on Facebook"
+          />
         </FacebookShareButton>
+      </Tooltip>
 
-        <LinkedinShareButton url={shareUrl} summary={content} title="Marketing Content">
-          <LinkedinIcon size={32} round />
+      <Tooltip label="Share on Twitter" placement="top" hasArrow>
+        <TwitterShareButton url={shareUrl} title={title}>
+          <IconButton
+            icon={<FaTwitter />}
+            isRound
+            size="sm"
+            colorScheme="twitter"
+            aria-label="Share on Twitter"
+          />
+        </TwitterShareButton>
+      </Tooltip>
+      
+      <Tooltip label="Share on LinkedIn" placement="top" hasArrow>
+        <LinkedinShareButton url={shareUrl} title={title} summary={content.substring(0, 100)}>
+          <IconButton
+            icon={<FaLinkedin />}
+            isRound
+            size="sm"
+            colorScheme="linkedin"
+            aria-label="Share on LinkedIn"
+          />
         </LinkedinShareButton>
+      </Tooltip>
 
-        <WhatsappShareButton url={shareUrl} title={content} separator=":: ">
-          <WhatsappIcon size={32} round />
-        </WhatsappShareButton>
-
-        {imageUrl && (
-          <Button
-            onClick={onOpen}
-            p={0}
-            borderRadius="full"
-            width="32px"
-            height="32px"
-            bg="linear-gradient(45deg, #f09433 0%,#e6683c 25%,#dc2743 50%,#cc2366 75%,#bc1888 100%)"
-            color="white"
-            _hover={{ opacity: 0.9 }}
-          >
-            <FaInstagram size={16} />
-          </Button>
-        )}
-      </HStack>
-
-      <Modal isOpen={isOpen} onClose={onClose} isCentered>
-        <ModalOverlay />
-        <ModalContent bg="gray.800" color="white">
-          <ModalHeader>Share to Instagram</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <VStack spacing={4} textAlign="center">
-              <Text>Instagram doesn't allow direct sharing from websites. Please follow these steps:</Text>
-              <Text>
-                <strong>Step 1:</strong> Download the image to your device.
-              </Text>
-              <Button colorScheme="orange" onClick={handleDownload}>
-                Download Image
-              </Button>
-              <Text>
-                <strong>Step 2:</strong> Open your Instagram app (or{' '}
-                <Link href="https://www.instagram.com" isExternal color="cyan.400">
-                  instagram.com
-                </Link>
-                ) and upload the image.
-              </Text>
-            </VStack>
-          </ModalBody>
-        </ModalContent>
-      </Modal>
-    </>
+      <Tooltip label="Share on WhatsApp" placement="top" hasArrow>
+      <WhatsappShareButton url={shareUrl} title={title}>
+        <IconButton
+          icon={<FaWhatsapp />}
+          isRound
+          size="sm"
+          colorScheme="whatsapp"
+          aria-label="Share on WhatsApp"
+        />
+      </WhatsappShareButton>
+      </Tooltip>
+    </HStack>
   );
 };
 
