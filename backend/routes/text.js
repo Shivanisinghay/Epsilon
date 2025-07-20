@@ -1,13 +1,11 @@
 const express = require("express");
 require("dotenv").config();
-
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 const router = express.Router();
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 router.post("/generate", async (req, res) => {
-  // Added variations for A/B testing
   const { type, prompt, variations } = req.body;
 
   if (!type || !prompt) {
@@ -16,7 +14,6 @@ router.post("/generate", async (req, res) => {
 
   let formattedPrompt = prompt;
 
-  // Handle request for multiple variations
   if (variations && variations > 1) {
     formattedPrompt = `Generate ${variations} distinct variations for the following marketing ${type} prompt, clearly separated by "---VARIATION---": ${prompt}`;
   } else {

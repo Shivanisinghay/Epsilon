@@ -1,12 +1,10 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
-import {
-  Box, Heading, FormControl, FormLabel, Input, Button, Text,
-  FormHelperText, VStack, List, ListItem, ListIcon
-} from '@chakra-ui/react';
-import { MdCheckCircle } from 'react-icons/md';
+import { useNavigate, Link } from 'react-router-dom';
+import { Box, Heading, FormControl, FormLabel, Input, Button, Text, VStack, Icon } from '@chakra-ui/react';
 import toast from 'react-hot-toast';
+import { FaUserPlus } from 'react-icons/fa';
+import { glassmorphismStyle } from '../theme';
 
 const Register = () => {
   const [name, setName] = useState('');
@@ -22,10 +20,8 @@ const Register = () => {
       toast.success('Registration successful! Please login.');
       navigate('/login');
     } catch (error) {
-      // Handle detailed validation errors from backend
-      if (error.response?.data?.details) {
-        const errorMessages = error.response.data.details.map(err => err.msg).join('\n');
-        toast.error(errorMessages, { duration: 5000 });
+       if (error.response?.data?.details) {
+        toast.error(error.response.data.details.map(err => err.msg).join('\n'));
       } else {
         toast.error(error.response?.data?.error || 'Registration failed');
       }
@@ -33,58 +29,31 @@ const Register = () => {
   };
 
   return (
-    <Box maxW="md" mx="auto" mt={10} p={6} borderWidth={1} borderRadius="lg">
-      <Heading as="h2" size="xl" mb={6} textAlign="center">
-        Register
-      </Heading>
+     <Box maxW="md" w="100%" p={8} {...glassmorphismStyle}>
+       <VStack spacing={4} align="center">
+        <Icon as={FaUserPlus} w={10} h={10} color="cyan.400" />
+        <Heading as="h1" size="lg" textAlign="center">Create an Account</Heading>
+      </VStack>
       <form onSubmit={handleSubmit}>
-        <VStack spacing={4}>
+        <VStack spacing={4} mt={8}>
           <FormControl id="name">
             <FormLabel>Name</FormLabel>
             <Input type="text" value={name} onChange={(e) => setName(e.target.value)} required />
           </FormControl>
-          <FormControl id="email">
+           <FormControl id="email">
             <FormLabel>Email address</FormLabel>
             <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
           </FormControl>
           <FormControl id="password">
             <FormLabel>Password</FormLabel>
             <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-            <FormHelperText>
-              <List spacing={1} mt={2} fontSize="sm" color="gray.600">
-                <ListItem>
-                  <ListIcon as={MdCheckCircle} color="green.500" />
-                  At least 8 characters long.
-                </ListItem>
-                <ListItem>
-                  <ListIcon as={MdCheckCircle} color="green.500" />
-                  Contains an uppercase letter.
-                </ListItem>
-                <ListItem>
-                  <ListIcon as={MdCheckCircle} color="green.500" />
-                  Contains a lowercase letter.
-                </ListItem>
-                <ListItem>
-                  <ListIcon as={MdCheckCircle} color="green.500" />
-                  Contains a number.
-                </ListItem>
-                 <ListItem>
-                  <ListIcon as={MdCheckCircle} color="green.500" />
-                  Contains a special character (@$!%*?&).
-                </ListItem>
-              </List>
-            </FormHelperText>
           </FormControl>
-          <Button type="submit" colorScheme="teal" width="full">
-            Register
-          </Button>
+          <Button type="submit" width="full" mt={4}>Register</Button>
         </VStack>
       </form>
-      <Text mt={4} textAlign="center">
+       <Text mt={6} textAlign="center" fontSize="sm">
         Already have an account?{' '}
-        <Button variant="link" colorScheme="teal" onClick={() => navigate('/login')}>
-          Login
-        </Button>
+        <Button as={Link} to="/login" variant="link" colorScheme="cyan">Login here</Button>
       </Text>
     </Box>
   );

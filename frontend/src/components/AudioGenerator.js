@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Box, Heading, FormControl, FormLabel, Textarea, Button, Spinner } from '@chakra-ui/react';
-import { generateAudio } from '../services/content';
+import { Box, Heading, FormControl, FormLabel, Textarea, Button, Spinner, Text } from '@chakra-ui/react';
+import { generateAudio, saveContent } from '../services/content';
+import SocialShareButtons from './SocialShareButtons';
 import toast from 'react-hot-toast';
 
 const AudioGenerator = () => {
@@ -15,6 +16,11 @@ const AudioGenerator = () => {
     try {
       const data = await generateAudio(text);
       setAudioPath(data.audioPath);
+      await saveContent({
+          type: 'audio',
+          prompt: text,
+          generatedContent: data.audioPath
+      });
       toast.success('Audio generated!');
     } catch (error) {
       toast.error(error.response?.data?.error || 'Failed to generate audio.');
@@ -30,27 +36,39 @@ const AudioGenerator = () => {
       </Heading>
       <form onSubmit={handleSubmit}>
         <FormControl id="audio-text" mb={4}>
-          <FormLabel>Ad Script</FormLabel>
+          <FormLabel>Your Script</FormLabel>
           <Textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
             placeholder="Enter the script for the audio ad..."
             required
+            size="lg"
           />
         </FormControl>
-        <Button type="submit" colorScheme="teal" isLoading={loading}>
+        <Button type="submit" isLoading={loading} loadingText="Generating...">
           Generate Audio
         </Button>
       </form>
-      {loading && <Spinner mt={6} />}
+
+      {loading && (
+        <Box textAlign="center" mt={8}>
+          <Spinner size="xl" color="cyan.400"/>
+          <Text mt={4}>Generating audio...</Text>
+        </Box>
+      )}
+
       {audioPath && (
-        <Box mt={6}>
+        <Box mt={8}>
           <Heading as="h4" size="md" mb={2}>
             Generated Audio:
           </Heading>
-          <audio controls src={`${process.env.REACT_APP_BACKEND_URL}${audioPath}`}>
+          <audio controls src={`${process.env.REACT_APP_BACKEND_URL}${audioPath}`} style={{ filter: 'invert(1)' }}>
             Your browser does not support the audio element.
           </audio>
+          <SocialShareButtons
+            content={`Listen to this audio ad I generated: ${text}`}
+            url={`${process.env.REACT_APP_BACKEND_URL}${audioPath}`}
+          />
         </Box>
       )}
     </Box>

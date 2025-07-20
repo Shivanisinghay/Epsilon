@@ -13,7 +13,6 @@ api.interceptors.request.use(config => {
   return config;
 });
 
-
 export const login = async (email, password) => {
   const response = await axios.post(`${API_URL}/auth/login`, { email, password });
   return response.data;
@@ -24,10 +23,8 @@ export const register = async (name, email, password) => {
   return response.data;
 };
 
-// New function to update user profile
 export const updateUser = async (userData) => {
     const response = await api.put('/user/profile', userData);
-    // Update user data in local storage
     localStorage.setItem('user', JSON.stringify(response.data));
     return response.data;
 };

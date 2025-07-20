@@ -3,9 +3,7 @@ const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 const api = axios.create({
   baseURL: `${API_URL}/api`,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  headers: { 'Content-Type': 'application/json' },
 });
 
 api.interceptors.request.use(config => {
@@ -21,8 +19,8 @@ export const generateText = async (type, prompt, variations = 1) => {
   return response.data;
 };
 
-export const generateImage = async (prompt) => {
-  const response = await api.post('/image/generate/image', { prompt });
+export const generateImage = async (prompt, width, height) => {
+  const response = await api.post('/image/generate/image', { prompt, width, height });
   return response.data;
 };
 
@@ -31,14 +29,18 @@ export const generateAudio = async (text) => {
   return response.data;
 };
 
-// New function to save generated content
 export const saveContent = async (contentData) => {
     const response = await api.post('/content', contentData);
     return response.data;
 };
 
-// New function to get content history
 export const getContentHistory = async () => {
     const response = await api.get('/content');
     return response.data;
+};
+
+// Function to call the new DELETE endpoint
+export const deleteContent = async (id) => {
+  const response = await api.delete(`/content/${id}`);
+  return response.data;
 };

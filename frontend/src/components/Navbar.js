@@ -1,7 +1,7 @@
-import { Box, Flex, Heading, Button, Spacer, Menu, MenuButton, MenuList, MenuItem } from '@chakra-ui/react';
+import { Box, Flex, Heading, Button, Spacer, Text } from '@chakra-ui/react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { FaUserCircle } from 'react-icons/fa';
+import { FaBolt } from 'react-icons/fa';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
@@ -13,29 +13,42 @@ const Navbar = () => {
   };
 
   return (
-    <Flex p={4} bg="teal.500" color="white" alignItems="center" boxShadow="md">
-      <Heading as={Link} to="/" size="md">
-        Epsilon
-      </Heading>
+    <Flex
+      as="nav"
+      p={4}
+      bg="rgba(10, 10, 25, 0.5)"
+      backdropFilter="blur(10px)"
+      color="white"
+      alignItems="center"
+      borderBottom="1px"
+      borderColor="whiteAlpha.200"
+      position="sticky"
+      top="0"
+      zIndex="sticky"
+    >
+      <Flex as={Link} to="/" alignItems="center" _hover={{ textDecoration: 'none' }}>
+        <FaBolt color="cyan" />
+        <Heading size="md" ml={2} letterSpacing="tight">
+          OmniOrchestrator
+        </Heading>
+      </Flex>
       <Spacer />
       <Box>
         {user ? (
-          <Menu>
-            <MenuButton as={Button} colorScheme="teal" variant="ghost" leftIcon={<FaUserCircle />}>
-              {user.name}
-            </MenuButton>
-            <MenuList bg="white" color="black">
-              <MenuItem as={Link} to="/dashboard">Dashboard</MenuItem>
-              <MenuItem as={Link} to="/profile">Profile</MenuItem>
-              <MenuItem onClick={handleLogout}>Logout</MenuItem>
-            </MenuList>
-          </Menu>
+          <>
+            <Button as={Link} to="/dashboard" variant="ghost" mr={4}>
+              Dashboard
+            </Button>
+            <Button onClick={handleLogout} variant="outline" colorScheme="purple">
+              Logout
+            </Button>
+          </>
         ) : (
           <>
             <Button as={Link} to="/login" variant="ghost" mr={4}>
               Login
             </Button>
-            <Button as={Link} to="/register" colorScheme="teal" variant="outline" _hover={{ bg: "teal.600" }}>
+            <Button as={Link} to="/register" variant="solid">
               Register
             </Button>
           </>
