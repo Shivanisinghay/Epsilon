@@ -8,6 +8,8 @@ const textRoutes = require("./routes/text");
 const imageRoutes = require("./routes/image");
 const audioRoutes = require("./routes/audio");
 const authRoutes = require("./auth/auth");
+const contentRoutes = require("./routes/content"); // New
+const userRoutes = require("./routes/user"); // New
 const errorHandler = require("./middleware/errorHandler");
 const validateEnv = require("./utils/validateEnv");
 
@@ -21,8 +23,8 @@ const app = express();
 // Security middleware
 app.use(helmet());
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? process.env.FRONTEND_URL 
+  origin: process.env.NODE_ENV === 'production'
+    ? process.env.FRONTEND_URL
     : 'http://localhost:3000',
   credentials: true
 }));
@@ -58,15 +60,15 @@ connectDB();
 
 // Health check endpoint
 app.get("/health", (req, res) => {
-  res.json({ 
-    status: "OK", 
+  res.json({
+    status: "OK",
     timestamp: new Date().toISOString(),
     uptime: process.uptime()
   });
 });
 
 // Serve static files
-app.use('/images', express.static('images')); // Add this line
+app.use('/images', express.static('images'));
 app.use('/audio', express.static('audio'));
 
 // Routes
@@ -74,6 +76,9 @@ app.use("/api/text", aiLimiter, textRoutes);
 app.use("/api/image", aiLimiter, imageRoutes);
 app.use("/api/audio", aiLimiter, audioRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/content", contentRoutes); // New
+app.use("/api/user", userRoutes); // New
+
 
 // Error handling middleware
 app.use(errorHandler);

@@ -7,7 +7,8 @@ const router = express.Router();
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 router.post("/generate", async (req, res) => {
-  const { type, prompt } = req.body;
+  // Added variations for A/B testing
+  const { type, prompt, variations } = req.body;
 
   if (!type || !prompt) {
     return res.status(400).json({ error: "Missing type or prompt" });
@@ -15,18 +16,23 @@ router.post("/generate", async (req, res) => {
 
   let formattedPrompt = prompt;
 
-  switch (type) {
-    case "email":
-      formattedPrompt = `Generate a marketing email: ${prompt}`;
-      break;
-    case "notification":
-      formattedPrompt = `Write a marketing notification: ${prompt}`;
-      break;
-    case "transcript":
-      formattedPrompt = `Write a video transcript: ${prompt}`;
-      break;
-    default:
-      formattedPrompt = prompt;
+  // Handle request for multiple variations
+  if (variations && variations > 1) {
+    formattedPrompt = `Generate ${variations} distinct variations for the following marketing ${type} prompt, clearly separated by "---VARIATION---": ${prompt}`;
+  } else {
+    switch (type) {
+      case "email":
+        formattedPrompt = `Generate a marketing email: ${prompt}`;
+        break;
+      case "notification":
+        formattedPrompt = `Write a marketing notification: ${prompt}`;
+        break;
+      case "transcript":
+        formattedPrompt = `Write a video transcript: ${prompt}`;
+        break;
+      default:
+        formattedPrompt = prompt;
+    }
   }
 
   try {
