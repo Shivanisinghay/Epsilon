@@ -1,6 +1,6 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
+const jwt =require("jsonwebtoken");
 const rateLimit = require("express-rate-limit");
 const { body, validationResult } = require("express-validator");
 const User = require("../models/User");
@@ -8,10 +8,10 @@ require("dotenv").config();
 
 const router = express.Router();
 
-// Rate limiting for auth endpoints
+// Rate limiting for auth endpoints - More lenient for development
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // limit each IP to 5 requests per windowMs
+  max: 100, // Increased from 5 to 100 for development
   message: { error: "Too many authentication attempts, please try again later" }
 });
 
