@@ -25,6 +25,7 @@
     "js": "^0.1.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.16.4",
+    "multer": "^2.0.2",
     "react-share": "^5.2.2",
     "uuid": "^11.1.0"
   },

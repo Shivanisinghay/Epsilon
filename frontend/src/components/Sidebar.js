@@ -1,6 +1,19 @@
 import {
-  Box, Flex, VStack, Heading, Text, Link, Menu, MenuButton, MenuList, MenuItem, Avatar,
-  Icon, Divider, useBreakpointValue, IconButton
+  Box,
+  Flex,
+  VStack,
+  Heading,
+  Text,
+  Link,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
+  Avatar,
+  Icon,
+  Divider,
+  useBreakpointValue,
+  IconButton,
 } from '@chakra-ui/react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -8,13 +21,21 @@ import {
     FaBolt, FaThLarge, FaUserEdit, FaSignOutAlt, FaBars, FaTimes, 
     FaEnvelope, FaBell, FaFileAlt, FaImage, FaVolumeUp, FaHistory 
 } from 'react-icons/fa';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 
 const Sidebar = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [isNavOpen, setIsNavOpen] = useState(false);
   const isMobile = useBreakpointValue({ base: true, md: false });
+
+  // This hook creates a cache-busted URL that only updates when the user object changes.
+  const avatarUrl = useMemo(() => {
+    if (user?.profilePicture) {
+      return `${process.env.REACT_APP_BACKEND_URL}${user.profilePicture}?t=${new Date().getTime()}`;
+    }
+    return ''; // Return a blank string if no picture is set
+  }, [user]);
 
   const handleLogout = () => {
     logout();
@@ -47,10 +68,10 @@ const Sidebar = () => {
             <Menu placement="top-end">
                 <MenuButton w="100%">
                     <Flex alignItems="center" p={2} borderRadius="md" _hover={{ bg: 'whiteAlpha.200' }}>
-                        <Avatar size="sm" name={user.name} />
+                        <Avatar size="sm" name={user.name} src={avatarUrl} />
                         {navSize === 'large' && (
                         <Box ml={3} textAlign="left">
-                            <Text fontWeight="bold">{user.name}</Text>
+                            <Text fontWeight="bold">{user.username}</Text>
                             <Text fontSize="xs" color="gray.400">{user.email}</Text>
                         </Box>
                         )}
@@ -70,8 +91,8 @@ const Sidebar = () => {
     </VStack>
   );
 
-  return isMobile ? (
-    <>
+  const mobileNav = (
+     <>
       <IconButton icon={isNavOpen ? <FaTimes /> : <FaBars />} onClick={() => setIsNavOpen(!isNavOpen)}
         position="fixed" top={4} left={4} zIndex="overlay" bg="gray.800" _hover={{ bg: "gray.700" }}/>
       <Flex pos="fixed" top="0" left="0" h="100vh" w={isNavOpen ? '250px' : '0'} bg="rgba(10, 10, 25, 0.8)"
@@ -79,13 +100,17 @@ const Sidebar = () => {
         direction="column" overflow="hidden" zIndex="sticky">
         <NavContent />
       </Flex>
-    </>
-  ) : (
+     </>
+  );
+
+  const desktopNav = (
     <Flex pos="sticky" top="0" left="0" h="100vh" w="250px" bg="rgba(10, 10, 25, 0.5)" backdropFilter="blur(10px)"
       borderRight="1px" borderColor="whiteAlpha.200" direction="column">
       <NavContent />
     </Flex>
   );
+
+  return isMobile ? mobileNav : desktopNav;
 };
 
 const NavItem = ({ to, icon, text }) => (

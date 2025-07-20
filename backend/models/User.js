@@ -5,8 +5,12 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Name is required'],
     trim: true,
-    minlength: [2, 'Name must be at least 2 characters'],
-    maxlength: [50, 'Name must be less than 50 characters']
+  },
+  username: {
+    type: String,
+    trim: true,
+    unique: true,
+    sparse: true,
   },
   email: {
     type: String,
@@ -14,27 +18,43 @@ const userSchema = new mongoose.Schema({
     unique: true,
     lowercase: true,
     trim: true,
-    match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please provide a valid email'],
-    maxlength: [100, 'Email must be less than 100 characters']
+  },
+  phone: {
+    type: String,
+    trim: true,
+  },
+  // --- UPDATED FOR DATABASE STORAGE ---
+  profilePicture: {
+    data: Buffer, // Stores the image data
+    contentType: String // Stores the MIME type (e.g., 'image/png')
+  },
+  // --- END OF UPDATE ---
+  dob: {
+    type: Date,
+  },
+  gender: {
+    type: String,
+    enum: ['Male', 'Female', 'Other', 'Prefer not to say'],
+  },
+  bio: {
+    type: String,
+    maxlength: [250, 'Bio must be less than 250 characters'],
   },
   password: {
     type: String,
     required: [true, 'Password is required'],
     minlength: [8, 'Password must be at least 8 characters'],
-    select: false // Don't include password in queries by default
+    select: false,
   },
   createdAt: {
     type: Date,
-    default: Date.now
+    default: Date.now,
   },
-  lastLogin: {
-    type: Date
-  }
 }, {
   timestamps: true
 });
 
-// Index for better query performance
 userSchema.index({ email: 1 });
+userSchema.index({ username: 1 }, { unique: true, partialFilterExpression: { username: { $type: "string" } } });
 
 module.exports = mongoose.model("User", userSchema);

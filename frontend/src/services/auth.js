@@ -28,3 +28,14 @@ export const updateUser = async (userData) => {
     localStorage.setItem('user', JSON.stringify(response.data));
     return response.data;
 };
+
+// New function for uploading profile picture
+export const uploadProfilePicture = async (formData) => {
+    const response = await api.post('/user/profile-picture', formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+    });
+    localStorage.setItem('user', JSON.stringify(response.data));
+    return response.data;
+};

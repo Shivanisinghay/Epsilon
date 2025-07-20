@@ -27,7 +27,7 @@ const Dashboard = () => {
     fetchStats();
   }, []);
 
-  const aboutText = "Epsilon is a cutting-edge AI-powered platform designed to streamline your marketing efforts. From crafting compelling emails to generating entire video scripts, our suite of tools helps you create high-quality content faster than ever before. Save time, boost engagement, and scale your brand with the power of artificial intelligence.";
+  const aboutText = "OmniOrchestrator is a cutting-edge AI-powered platform designed to streamline your marketing efforts. From crafting compelling emails to generating entire video scripts, our suite of tools helps you create high-quality content faster than ever before. Save time, boost engagement, and scale your brand with the power of artificial intelligence.";
 
   return (
     <VStack spacing={8} align="stretch" w="100%">
@@ -48,14 +48,14 @@ const Dashboard = () => {
       </Box>
 
       <Box p={6} {...glassmorphismStyle}>
-        <Heading size="lg" mb={4}>About Epsilon</Heading>
+        <Heading size="lg" mb={4}>About OmniOrchestrator</Heading>
         <Text color="gray.300">{aboutText}</Text>
       </Box>
 
       <Box>
         <Heading size="lg" mb={4}>What Our Customers Say</Heading>
         <Grid templateColumns={{ base: '1fr', md: '1fr 1fr' }} gap={6}>
-          <ReviewCard name="Sarah J." title="Marketing Director" comment="Epsilon has cut our content creation time in half. The quality is outstanding!" avatar="https://bit.ly/dan-abramov" />
+          <ReviewCard name="Sarah J." title="Marketing Director" comment="OmniOrchestrator has cut our content creation time in half. The quality is outstanding!" avatar="https://bit.ly/dan-abramov" />
           <ReviewCard name="Mike R." title="Social Media Manager" comment="The image and notification generators are game-changers for our daily workflow." avatar="https://bit.ly/kent-c-dodds" />
         </Grid>
       </Box>

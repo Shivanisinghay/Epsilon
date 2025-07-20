@@ -1,66 +1,100 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Box, Heading, FormControl, FormLabel, Input, Button, VStack, FormHelperText } from '@chakra-ui/react';
-import toast from 'react-hot-toast';
-import { updateUser } from '../services/auth';
+import {
+  Box, Heading, FormControl, FormLabel, Input, Button, VStack, Textarea,
+  Avatar, HStack, Select, useToast
+} from '@chakra-ui/react';
+import { updateUser, uploadProfilePicture } from '../services/auth';
 import { glassmorphismStyle } from '../theme';
 
 const Profile = () => {
   const { user, setUser } = useAuth();
-  const [name, setName] = useState(user.name);
-  const [email, setEmail] = useState(user.email);
-  const [password, setPassword] = useState('');
+  const toast = useToast();
+  
+  const [formData, setFormData] = useState({});
+  const [avatarUrl, setAvatarUrl] = useState('');
+
+  useEffect(() => {
+    if (user) {
+      // The new URL points to our database serving endpoint
+      // The timestamp is crucial to prevent browser caching
+      const newAvatarUrl = `${process.env.REACT_APP_BACKEND_URL}/api/user/avatar/${user._id}?t=${new Date().getTime()}`;
+      setAvatarUrl(newAvatarUrl);
+
+      setFormData({
+        name: user.name || '',
+        username: user.username || '',
+        email: user.email || '',
+        phone: user.phone || '',
+        dob: user.dob ? new Date(user.dob).toISOString().split('T')[0] : '',
+        gender: user.gender || '',
+        bio: user.bio || '',
+      });
+    }
+  }, [user]);
+
+  const fileInputRef = useRef(null);
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const uploadData = new FormData();
+    uploadData.append('profilePicture', file);
+
+    try {
+      const updatedUser = await uploadProfilePicture(uploadData);
+      setUser(updatedUser); // Update global context
+      toast({ title: 'Profile picture updated!', status: 'success', isClosable: true });
+    } catch (error) {
+      toast({ title: 'Upload Failed', description: error.response?.data?.error || 'Please check the file.', status: 'error', isClosable: true });
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (password && password.length < 8) {
-      toast.error("New password must be at least 8 characters long.");
-      return;
-    }
     try {
-      const updatedData = { name, email };
-      if (password) {
-        updatedData.password = password;
-      }
-      const updatedUser = await updateUser(updatedData);
+      const updatedUser = await updateUser(formData);
       setUser(updatedUser);
-      toast.success('Profile updated successfully!');
-      setPassword('');
+      toast({ title: 'Profile saved successfully!', status: 'success', isClosable: true });
     } catch (error) {
-      toast.error(error.response?.data?.error || 'Update failed');
+      toast({ title: 'Save Failed', description: error.response?.data?.error || 'Please check your details.', status: 'error', isClosable: true });
     }
   };
 
   return (
-    <Box maxW="md" w="100%" p={8} {...glassmorphismStyle}>
-      <Heading as="h2" size="xl" mb={6} textAlign="center">
-        Profile Settings
-      </Heading>
-      <form onSubmit={handleSubmit}>
-        <VStack spacing={4}>
-          <FormControl id="name">
-            <FormLabel>Name</FormLabel>
-            <Input type="text" value={name} onChange={(e) => setName(e.target.value)} required />
-          </FormControl>
-          <FormControl id="email">
-            <FormLabel>Email address</FormLabel>
-            <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-          </FormControl>
-          <FormControl id="password">
-            <FormLabel>New Password</FormLabel>
-            <Input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Leave blank to keep current password"
-            />
-            <FormHelperText>Must be at least 8 characters long.</FormHelperText>
-          </FormControl>
-          <Button type="submit" width="full">
-            Update Profile
-          </Button>
-        </VStack>
-      </form>
+    <Box maxW="container.md" w="100%" p={8} {...glassmorphismStyle}>
+      <Heading as="h1" size="xl" mb={8} textAlign="center">Edit Profile</Heading>
+      <VStack as="form" onSubmit={handleSubmit} spacing={6} align="stretch">
+        
+        <FormControl>
+          <FormLabel>Profile Picture</FormLabel>
+          <HStack spacing={4}>
+            <Avatar size="xl" name={user?.name} src={avatarUrl} />
+            <Button onClick={() => fileInputRef.current.click()}>Change Picture</Button>
+            <Input type="file" ref={fileInputRef} onChange={handleFileChange} hidden accept="image/*" />
+          </HStack>
+        </FormControl>
+
+        <FormControl isRequired><FormLabel>Full Name</FormLabel><Input name="name" value={formData.name} onChange={handleChange} /></FormControl>
+        <FormControl><FormLabel>Username</FormLabel><Input name="username" value={formData.username} onChange={handleChange} /></FormControl>
+        <FormControl isRequired><FormLabel>Email Address</FormLabel><Input type="email" name="email" value={formData.email} onChange={handleChange} /></FormControl>
+        <FormControl><FormLabel>Phone Number (Optional)</FormLabel><Input type="tel" name="phone" value={formData.phone} /></FormControl>
+        <FormControl><FormLabel>Date of Birth</FormLabel><Input type="date" name="dob" value={formData.dob} /></FormControl>
+        <FormControl><FormLabel>Gender</FormLabel>
+          <Select name="gender" value={formData.gender} onChange={handleChange} placeholder="Select gender">
+            <option value="Male">Male</option> <option value="Female">Female</option>
+            <option value="Other">Other</option> <option value="Prefer not to say">Prefer not to say</option>
+          </Select>
+        </FormControl>
+        <FormControl><FormLabel>Bio / About Me</FormLabel><Textarea name="bio" value={formData.bio} onChange={handleChange} /></FormControl>
+        
+        <Button type="submit" mt={4} size="lg">Save Changes</Button>
+      </VStack>
     </Box>
   );
 };

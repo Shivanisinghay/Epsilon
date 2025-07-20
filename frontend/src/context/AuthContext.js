@@ -12,12 +12,18 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    const userData = localStorage.getItem('user');
-    if (token && userData) {
-      setUser(JSON.parse(userData));
+    try {
+      const token = localStorage.getItem('token');
+      const userData = localStorage.getItem('user');
+      if (token && userData) {
+        setUser(JSON.parse(userData));
+      }
+    } catch (error) {
+        console.error("Failed to parse user data from localStorage", error);
+        localStorage.clear(); // Clear corrupted data
+    } finally {
+        setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   const login = async (email, password) => {
@@ -29,8 +35,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const register = async (name, email, password) => {
-    const data = await registerService(name, email, password);
-    return data;
+    return await registerService(name, email, password);
   };
 
   const logout = () => {
@@ -39,8 +44,16 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
+  // This function is the single source of truth for updating the user state.
+  const updateUserInContext = (updatedUserData) => {
+    setUser(updatedUserData);
+    localStorage.setItem('user', JSON.stringify(updatedUserData));
+  };
+
+
   const value = {
     user,
+    setUser: updateUserInContext, // Pass our new function as setUser
     loading,
     login,
     register,
