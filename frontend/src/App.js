@@ -1,6 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
-import { Grid, GridItem, useBreakpointValue, Box, Flex } from '@chakra-ui/react';
+import { Grid, GridItem, useBreakpointValue, Box } from '@chakra-ui/react';
 import Sidebar from './components/Sidebar';
 import Home from './pages/Home';
 import Login from './pages/Login';
@@ -57,14 +57,7 @@ function App() {
             </Box>
         </>
       ) : ( // Not logged in
-        <Flex
-          minH="100vh"
-          align="center"
-          justify="center"
-          p={4}
-        >
-          <MainContent />
-        </Flex>
+        <MainContent />
       )}
     </Router>
   );
