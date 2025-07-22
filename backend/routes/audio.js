@@ -1,3 +1,4 @@
+const { Buffer } = require('buffer');
 const express = require("express");
 const axios = require("axios");
 const fs = require("fs").promises;
@@ -9,8 +10,8 @@ require("dotenv").config();
 const router = express.Router();
 
 // Ensure audio directory exists
+const audioDir = path.join(__dirname, '..', 'audio');
 const ensureAudioDir = async () => {
-  const audioDir = path.join(__dirname, '..', 'audio');
   try {
     await fs.access(audioDir);
   } catch {
@@ -20,7 +21,6 @@ const ensureAudioDir = async () => {
 
 // Cleanup old audio files
 const cleanupOldFiles = async () => {
-  const audioDir = path.join(__dirname, '..', 'audio');
   try {
     const files = await fs.readdir(audioDir);
     const now = Date.now();
@@ -85,14 +85,15 @@ router.post("/generate/audio", [
     );
 
     const filename = `${uuidv4()}.mp3`;
-    const audioDir = path.join(__dirname, '..', 'audio');
     const filepath = path.join(audioDir, filename);
 
     await fs.writeFile(filepath, response.data);
+    const base64Audio = Buffer.from(response.data).toString('base64');
 
     res.json({ 
       success: true,
       audioPath: `/audio/${filename}`,
+      audio_base64: `data:audio/mpeg;base64,${base64Audio}`,
       message: "Audio generated successfully"
     });
 

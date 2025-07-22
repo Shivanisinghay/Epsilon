@@ -6,16 +6,16 @@ import toast from 'react-hot-toast';
 
 const AudioGenerator = () => {
   const [text, setText] = useState('');
-  const [audioPath, setAudioPath] = useState('');
+  const [audioDataUrl, setAudioDataUrl] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setAudioPath('');
+    setAudioDataUrl('');
     try {
       const data = await generateAudio(text);
-      setAudioPath(data.audioPath);
+      setAudioDataUrl(data.audio_base64);
       await saveContent({
           type: 'audio',
           prompt: text,
@@ -57,17 +57,17 @@ const AudioGenerator = () => {
         </Box>
       )}
 
-      {audioPath && (
+      {audioDataUrl && (
         <Box mt={8}>
           <Heading as="h4" size="md" mb={2}>
             Generated Audio:
           </Heading>
-          <audio controls src={`${process.env.REACT_APP_BACKEND_URL}${audioPath}`} style={{ filter: 'invert(1)' }}>
+          <audio controls src={audioDataUrl} style={{ filter: 'invert(1)' }}>
             Your browser does not support the audio element.
           </audio>
           <SocialShareButtons
             content={`Listen to this audio ad I generated: ${text}`}
-            url={`${process.env.REACT_APP_BACKEND_URL}${audioPath}`}
+            url={audioDataUrl}
           />
         </Box>
       )}
